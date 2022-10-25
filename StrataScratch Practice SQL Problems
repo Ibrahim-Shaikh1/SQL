@@ -1,6 +1,8 @@
-These problem answers were derived from my StrataScratch account availble on my linktree @ https://linktr.ee/Ibrahim_Shaikh
+These problem answers were derived from my public StrataScratch account. If you wish to see more answers or view the 
+material in a better view, please visit my StrataScratch account availble on my linktree @ https://linktr.ee/Ibrahim_Shaikh
 
-Question 1: 
+
+Question 1: Host Popularity Rental Prices
 You’re given a table of rental property searches by users. The table consists of search results and outputs host information for searchers. Find the minimum, average, maximum rental prices for each host’s popularity rating. The host’s popularity rating is defined as below:
 0 reviews: New
 1 to 5 reviews: Rising
@@ -171,4 +173,169 @@ Output: user1	pop_percentage
 7	11.111
 8	11.111
 9	11.111
+
+Question 5: Classify Business Type
+Classify each business as either a restaurant, cafe, school, or other. A restaurant should have the word 'restaurant' in the business name. For cafes, either 'cafe', 'café', or 'coffee' can be in the business name. 'School' should be in the business name for schools. All other businesses should be classified as 'other'. Output the business name and the calculated classification.
+
+Table: sf_restaurant_health_violations
+
+Answer: 
+-- classify each business as restaurant, cafe, school, or other
+--outout business name and type 
+-- gonna have to use '%----%' and case statements 
+Select distinct business_name, 
+case 
+    when business_name ilike any(array['%school%']) then 'school'
+    when lower(business_name) like any(array['%restaurant%']) then 'restaurant' 
+    when lower(business_name) like any(array['%cafe%', '%café%', '%coffee%']) then 'cafe'
+    else 'other'  
+    END as business_type
+from sf_restaurant_health_violations
+
+Output: Only included a portion of output 
+business_name	business_type
+Starbucks	other
+TAWAN'S THAI FOOD	other
+Burger King 4525	other
+Tacos San Buena	other
+BLOWFISH SUSHI	other
+Tai Hing Inc.	other
+ROYAL GROUND COFFEE	cafe
+China Fun Express	other
+Home Plate	other
+Samiramis Imports	other
+Modern Thai Inc.	other
+WING HING RESTAURANT	restaurant
+Salem Grocery	other
+DENMAN MIDDLE SCHOOL	school
+Sam Rong Cafe	cafe
+Hilton Financial District- Restaurant Seven Fifty	restaurant
+Batter Bakery	other
+PRESIDIO THEATRE	other
+Jay's Cheesesteak	other
+Extreme Pizza	other
+
+Question 6: Number of violations
+You're given a dataset of health inspections. Count the number of violation in an inspection in 'Roxanne Cafe' for each year. If an inspection resulted in a violation, there will be a value in the 'violation_id' column. Output the number of violations by year in ascending order.
+
+Table: sf_restaurant_health_violations
+Answer: 
+-- Count the number of violation in an inspection in 'Roxanne Cafe' for each year. 
+--  If an inspection resulted in a violation, there will be a value in the 'violation_id' column.
+--Output the number of violations by year in ascending order. 
+
+Select business_name, count(violation_id) as num_violations, EXTRACT (YEAR from inspection_date) as year
+from sf_restaurant_health_violations 
+where business_name = 'Roxanne Cafe'
+group by business_id, business_name, EXTRACT (YEAR from inspection_date)
+order by business_id, year 
+
+Output: 
+business_name	num_violations	year
+Roxanne Cafe	5	2015
+Roxanne Cafe	2	2016
+Roxanne Cafe	3	2018
+
+Question 7: Day 1 Common Reactions
+Find the most common reaction for day 1 by counting the number of occurrences for each reaction. Output the reaction alongside its number of occurrences.
+
+Table: facebook_reactions
+
+Answer: 
+-- find most common reaction for day 1 
+-- output reaction alongside number of occurances 
+-- gonna use a count and group by function 
+
+Select reaction, count(reaction) as number_of_occurances
+from facebook_reactions
+where date_day = '1' 
+GROUP BY 1
+Having (count(reaction)) = 
+    (SELECT max(occurance)
+   FROM
+     (SELECT count(reaction) AS occurance
+      FROM facebook_reactions
+      WHERE date_day = '1'
+      GROUP BY reaction) b)
+order by count(reaction) desc
+
+Output: 
+reaction	number_of_occurances
+like	5
+laugh	5
+
+Question 8: Successfully Sent Messages
+
+Find the ratio of successfully received messages to sent messages.
+
+Tables: facebook_messages_sent, facebook_messages_received
+
+Answer:
+-- ratio of successfully received messages to sent messages.
+with combined as 
+(select s.sender, r.receiver, s.message_id, s.text
+from facebook_messages_sent as s
+join facebook_messages_received as r
+on s.message_id=r.message_id) 
+
+Select (Select count(receiver) as received from combined)/count(sender)::decimal as ratio
+from facebook_messages_sent
+
+Output: 
+ratio
+0.6
+
+Question 9: Customer Revenue In March
+
+Calculate the total revenue from each customer in March 2019. Include only customers who were active in March 2019.
+
+
+Output the revenue along with the customer id and sort the results based on the revenue in descending order.
+
+Table: orders
+
+Answer: 
+--total revenue from active customer in march 2019 
+-- ouptut revenue and customer id 
+-- sort results based on revenue desc 
+
+Select cust_id, Sum(total_order_cost) as revenue
+from orders 
+where order_date between '2019-03-01' and '2019-03-31'
+group by cust_id
+
+cust_id	revenue
+15	150
+7	80
+12	20
+3	210
+
+Question 10: Employee and Manager Salaries
+Find employees who are earning more than their managers. Output the employee's first name along with the corresponding salary.
+
+Table: employee
+
+Answer: 
+-- employees who earn more than manager 
+-- output first name along with salary 
+
+select c.id, c.first_name, c.employee_title, c.salary, e.manager_id from employee as c
+join employee e 
+on e.id = c.manager_id 
+where c.salary > e.salary
+
+Output: 
+id	first_name	employee_title	salary	manager_id
+11	Richerd	Manager	250000	1
+
+
+
+
+
+
+
+
+
+
+
 
