@@ -1,5 +1,5 @@
-These problem answers were derived from my public StrataScratch account. If you wish to see more answers or view the 
-material in a better view, please visit my StrataScratch account availble on my linktree @ https://linktr.ee/Ibrahim_Shaikh
+The following code is a collection of medium & hard level questions from my public StrataScratch account. 
+If you wish to see more questions I've solved, please visit my StrataScratch account availble on my linktree @ https://linktr.ee/Ibrahim_Shaikh
 
 
 Question 1: Host Popularity Rental Prices
@@ -497,5 +497,288 @@ date	total_energy
 2020-01-06	1250
 2020-01-07	1250
 
+Question 16: Top Cool Votes
 
-IIf you wish to see more questions, please visit my StrataScratch account listed at the top of this page
+Find the review_text that received the highest number of  'cool' votes.
+Output the business name along with the review text with the highest numbef of 'cool' votes.
+
+Table: yelp_reviews
+
+Answer: 
+--review text with highest cool votes 
+--output business name along with review text with highest number of 'cool' votes
+-- gonna have to find max cool 
+-- output business name, review text, and number of cool votes 
+-- work around ties
+
+select business_name, review_text, cool
+from yelp_reviews 
+where cool =  (select max(cool) from yelp_reviews )
+
+Output: 
+business_name	review_text	cool
+Roka Akor	I hate to admit it, but it had been a long while since my last visit to Roka Akor. I deserve a hand slap. But last week, I had the perfect excuse to p	10
+Lunardis	This is the nicest grocery store in the city. I actually met my wife at this grocery store while shopping for avocados.	10
+
+Question 17: Find whether the number of seniors works at Meta/Facebook is higher than its number of USA based employees
+Find whether the number of senior workers (i.e., more experienced) at Meta/Facebook is higher than number of USA based employees at Facebook/Meta.
+If the number of seniors is higher then output as 'More seniors'. Otherwise, output as 'More USA-based'.
+
+Table: facebook_employees
+
+Answer: -- senior workers at meta higher than USA based employees? 
+--if number seniors is higher then output more seniors otherwise output more use 
+--(Select count(location) as USA_emp from facebook_employees where location='USA')
+
+Select
+case when (Select count(is_senior) as senior_emp from facebook_employees where is_senior='TRUE') > (Select count(location) as USA_emp from facebook_employees where location='USA') THEN 'More seniors' ELSE 'More USA-based' END as answer
+from facebook_employees
+limit 1
+
+Output: 
+answer
+More seniors
+
+Question 18: Spam Posts
+
+Calculate the percentage of spam posts in all viewed posts by day. A post is considered a spam if a string "spam" is inside keywords of the post. 
+Note that the facebook_posts table stores all posts posted by users. The facebook_post_views table is an action table denoting if a user has viewed a post.
+
+Answer: -- calc percent spam post in all viewed posts by day
+-- considered spam if spam is in keywords 
+--facebook_posts table stores all posts posted by users 
+--facebook_post_views table is an action table denoting if a user has viewed a post.
+With data as (
+Select 
+posts.post_id,
+posts.poster,
+posts.post_text,
+posts.post_keywords,
+posts.post_date,
+count(views.viewer_id) as views
+from facebook_posts as posts left join facebook_post_views as views
+on posts.post_id = views.post_id 
+group by posts.post_id,
+posts.poster,
+posts.post_text,
+posts.post_keywords,
+posts.post_date 
+order by posts.post_id ) , 
+
+spam1 as (select sum(views) as spam, post_date from data where post_keywords like '%spam%' group by post_date order by post_date), 
+
+views1 as (select sum(views) as views, post_date  from data group by post_date order by post_date)  
+
+select v.post_date, (s.spam/v.views)* 100 as percent_spam
+from views1 as v join spam1 as s
+on v.post_date=s.post_date
+
+Output: 
+post_date	percent_spam
+2019-01-01	100
+2019-01-02	50
+
+Question 19: Acceptance Rate By Date
+What is the overall friend acceptance rate by date? Your output should have the rate of acceptances by the date the request was sent. Order by the earliest date to latest.
+
+
+Assume that each friend request starts by a user sending (i.e., user_id_sender) a friend request to another user (i.e., user_id_receiver) that's logged in the table with action = 'sent'. 
+If the request is accepted, the table logs action = 'accepted'. If the request is not accepted, no record of action = 'accepted' is logged.
+
+Table: fb_friend_requests
+
+Answer: 
+--rate of acceptance by when request was sent 
+--earliest to latest 
+
+Select 
+a.date, 
+count(b.user_id_sender) / count (a.user_id_sender) ::float
+
+From 
+(
+select date, user_id_sender, user_id_receiver
+from fb_friend_requests
+where action = 'sent'
+) as a
+
+Left Join 
+(
+select date, user_id_sender, user_id_receiver
+from fb_friend_requests
+where action = 'accepted'
+) as b
+on a.user_id_sender = b.user_id_sender
+AND a.user_id_receiver = b.user_id_receiver
+group by a.date 
+
+Output: 
+date	?column?
+2020-01-04	0.75
+2020-01-06	0.667
+
+Question 20: SMS Confirmations From Users
+Meta/Facebook sends SMS texts when users attempt to 2FA (2-factor authenticate) into the platform to log in. 
+In order to successfully 2FA they must confirm they received the SMS text message. Confirmation texts are only valid on the date they were sent.
+
+
+Unfortunately, there was an ETL problem with the database where friend requests and invalid confirmation records were inserted into the logs, which are stored in the 'fb_sms_sends' table. 
+These message types should not be in the table.
+
+
+Fortunately, the 'fb_confirmers' table contains valid confirmation records so you can use this table to identify SMS text messages that were confirmed by the user.
+
+
+Calculate the percentage of confirmed SMS texts for August 4, 2020.
+
+Tables: fb_sms_sends, fb_confirmers
+
+Answer: 
+-- sms sends table was corrupted 
+-- includes friend requests and invalid conf codes 
+-- confirmers table has the valid conf records 
+--calculate the persent of confirmed conf codes for august 4 
+
+With sends as (
+Select * 
+from fb_sms_sends 
+where type = 'message' and ds = '2020-08-04'),
+final as (
+select conf.date, conf.phone_number, sends.type
+from sends
+left join fb_confirmers as conf 
+on sends.ds= conf.date and sends.phone_number= conf.phone_number
+where conf.date = '2020-08-04' ) 
+
+--select DISTINCT * from fb_confirmers where date = '2020-08-04'
+--
+select ((select count(phone_number) as conf from final) / (select  count(phone_number) from sends)::decimal)*100 as percent
+
+Output: 
+percent
+20
+
+Question 21: Most Active Users On Messenger
+
+Meta/Facebook Messenger stores the number of messages between users in a table named 'fb_messages'. In this table 'user1' is the sender, 'user2' is the receiver, and 'msg_count' is the number of messages exchanged between them.
+Find the top 10 most active users on Meta/Facebook Messenger by counting their total number of messages sent and received. Your solution should output usernames and the count of the total messages they sent or received
+
+Table: fb_messages
+
+Answer: 
+--  'user1' is the sender, 'user2' is the receiver 
+-- 10 most active users on Meta/Facebook Messenger by counting their total number of messages sent and received.
+-- should output usernames and the count of the total messages they sent or received
+with answer as (
+Select user1 as user, Sum(msg_count) as mssg_sent_received
+from fb_messages 
+group by user1
+
+UNION
+
+Select user2 as user, Sum(msg_count) as mssg_sent_received
+from fb_messages 
+group by user2
+) 
+
+Select  * from answer order by mssg_sent_received desc limit 10
+
+Output: 
+user	mssg_sent_received
+tanya26	57
+johnmccann	47
+craig23	43
+herringcarlos	37
+wangdenise	36
+trobinson	35
+lindsey38	31
+lfisher	29
+jennifer11	28
+ucrawford	26
+
+Question 22: Finding User Purchases
+Write a query that'll identify returning active users. A returning active user is a user that has made a second purchase within 7 days of any other of their purchases. 
+Output a list of user_ids of these returning active users.
+
+Table: amazon_transactions
+
+Answer: 
+-- user that has made a second purchase within 7 days of prior purchase 
+-- Output a list of these user IDs 
+
+select distinct(a.user_id)
+    from amazon_transactions as a
+    join 
+    amazon_transactions as b 
+    on a.user_id= b.user_id
+and a.id<>b.id 
+and b.created_at::date - a.created_at::date between 0 and 7
+order by a.user_id
+
+Output: 
+user_id
+100
+103
+105
+109
+110
+111
+112
+114
+117
+120
+122
+128
+129
+130
+131
+133
+141
+143
+150
+
+Question 23: Users By Average Session Time
+Calculate each user's average session time. A session is defined as the time difference between a page_load and page_exit. 
+For simplicity, assume a user has only 1 session per day and if there are multiple of the same events on that day, consider only the latest page_load and earliest page_exit. Output the user_id and their average session time.
+
+Answer: 
+  With final_data as (  
+    SELECT t1.user_id, t1.timestamp::date as date,
+           min(t2.timestamp::TIMESTAMP) - max(t1.timestamp::TIMESTAMP) as session_duration
+    FROM facebook_web_log t1
+    JOIN facebook_web_log t2 ON t1.user_id = t2.user_id
+    WHERE t1.action = 'page_load' 
+      AND t2.action = 'page_exit' 
+      AND t2.timestamp > t1.timestamp 
+    group by 1,2) 
+    
+Select user_id, avg(session_duration) from final_data group by user_id
+
+
+Table: facebook_web_log
+
+Output: 
+
+user_id	avg
+0	1883.5
+1	35
+
+Question 24: Workers With The Highest Salaries
+Find the titles of workers that earn the highest salary. Output the highest-paid title or multiple titles that share the highest salary.
+
+Tables: worker, title
+
+Answer: 
+--find titles of workers earning highest salary 
+-- output highest paid title or multiple titles that share highest salary 
+select first_name, last_name, salary, worker_title
+from worker as w
+left join title as t 
+on w.worker_id = t.worker_ref_id 
+where salary = (select max(salary) from worker)
+
+
+Output: 
+first_name	last_name	salary	worker_title
+Amitah	Singh	500000	Asst. Manager
+Vivek	Bhati	500000	Manager
