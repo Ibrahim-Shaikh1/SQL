@@ -1,0 +1,174 @@
+These problem answers were derived from my StrataScratch account availble on my linktree @ https://linktr.ee/Ibrahim_Shaikh
+
+Question 1: 
+You’re given a table of rental property searches by users. The table consists of search results and outputs host information for searchers. Find the minimum, average, maximum rental prices for each host’s popularity rating. The host’s popularity rating is defined as below:
+0 reviews: New
+1 to 5 reviews: Rising
+6 to 15 reviews: Trending Up
+16 to 40 reviews: Popular
+more than 40 reviews: Hot
+
+
+Tip: The id column in the table refers to the search ID. You'll need to create your own host_id by concating price, room_type, host_since, zipcode, and number_of_reviews.
+
+
+Output host popularity rating and their minimum, average and maximum rental prices.
+
+Table: airbnb_host_searches
+
+Answer: 
+-- min, avg, max rental price for each host pop rating 
+--Output host popularity rating and their minimum, average and maximum rental prices.
+With simple_data as 
+(
+select 
+distinct Concat ( price, room_type, host_since, zipcode, number_of_reviews) as id_new, 
+case 
+    WHEN number_of_reviews < 1 then 'New'
+    WHEN number_of_reviews > 0 and number_of_reviews <6 then 'Rising' 
+    WHEN number_of_reviews > 5 and number_of_reviews < 16 then 'Trending Up' 
+    WHEN number_of_reviews > 15 and number_of_reviews < 41 then 'Popular' 
+    WHEN number_of_reviews > 40 then 'Hot' END as popularity_rating, 
+    price
+from airbnb_host_searches  
+order by Concat(price, room_type, host_since, zipcode, number_of_reviews)
+)
+
+Select 
+    popularity_rating, 
+    min (price), 
+    avg (price), 
+    max (price)
+from simple_data
+group by popularity_rating
+
+Output: 
+popularity_rating	min	avg	max
+New	313.55	515.92	741.76
+Hot	340.12	464.233	633.51
+Popular	270.81	472.815	667.83
+Rising	355.53	503.847	717.01
+Trending Up	361.09	476.277	685.65
+
+
+Question 2: Top 5 States With 5 Star Businesses
+
+Find the top 5 states with the most 5 star businesses. Output the state name along with the number of 5-star businesses and order records by the number of 5-star businesses in descending order. In case there are ties in the number of businesses, return all the unique states. If two states have the same result, sort them in alphabetical order.
+
+Table: yelp_business
+
+-- top 5 states with most 5 star business 
+-- output state name and num of 5 stars 
+-- order by num 5 stars desc 
+-- return unique states, if ties alphabetical (gonna use a where --- subquery)
+with top5 as
+(Select state, count(stars) as stars
+from yelp_business 
+where stars = '5'
+group by state 
+order by count(stars) desc 
+limit 5)
+
+Select state, count(stars) as num_five_stars
+from yelp_business 
+where stars = '5'
+group by state 
+having count(stars) >= ( Select min(stars) from top5)
+order by count(stars) desc 
+
+Output: 
+state	num_five_stars
+AZ	10
+ON	5
+NV	4
+IL	3
+WI	3
+OH	3
+
+
+Question 3: Premium vs Freemium
+
+Find the total number of downloads for paying and non-paying users by date. Include only records where non-paying customers have more downloads than paying customers. The output should be sorted by earliest date first and contain 3 columns date, non-paying downloads, paying downloads.
+
+Tables: ms_user_dimension, ms_acc_dimension, ms_download_facts
+
+Answer: -- total downloads for paying/nonpaying customers by date 
+-- inlude only records where non paying have more downloads than paying 
+-- order by earliest date 
+-- ouput date, non paying download, paying download
+with ay as 
+    (select * from ms_acc_dimension where paying_customer = 'yes'), 
+an as 
+    (select * from ms_acc_dimension where paying_customer = 'no'), 
+final_data as
+    (Select d.date, d.downloads,u.user_id, u.acc_id, ay.paying_customer as yes, an.paying_customer as no
+    from ms_user_dimension as u
+    join ms_download_facts as d
+    on u.user_id = d.user_id 
+    left join ay 
+    on u.acc_id = ay.acc_id  
+    left join an
+    on u.acc_id = an.acc_id  ),
+yes as (Select 
+    date, 
+    (select (sum(downloads)) where yes = 'yes') as paying_downloads 
+    from final_data
+    where yes is not null
+    group by date, yes 
+    order by date) , 
+no as (
+ Select 
+    date, 
+   (select (sum(downloads)) where no = 'no') as non_paying_downloads
+    from final_data
+    where no is not null
+    group by date, no
+    order by date)
+
+select yes.date, non_paying_downloads, paying_downloads from yes join no 
+on yes.date=no.date 
+where non_paying_downloads > paying_downloads
+
+Output: date	non_paying_downloads	paying_downloads
+2020-08-16	15	14
+2020-08-17	45	9
+2020-08-18	10	7
+2020-08-21	32	17
+
+Question 4: Popularity Percentage
+
+Find the popularity percentage for each user on Meta/Facebook. The popularity percentage is defined as the total number of friends the user has divided by the total number of users on the platform, then converted into a percentage by multiplying by 100.
+Output each user along with their popularity percentage. Order records in ascending order by user id.
+The 'user1' and 'user2' column are pairs of friends.
+
+Answer: -- popularity percentage for eacg meta user 
+-- total num friends / total num users on platform * 100 
+-- output user and pop percentage 
+-- order by user id asc 
+with combined_data as (
+(select user1 
+from facebook_friends
+order by user1 )
+Union all 
+(select user2 as user1 
+from facebook_friends
+order by user2 ) ), 
+final_data as 
+(select user1, count (user1) as num_friends, (select count(distinct user1) as total_users from combined_data ) 
+from combined_data 
+group by user1
+order by user1)
+
+select user1, (num_friends/total_users::decimal)*100 as pop_percentage from final_data
+
+Output: user1	pop_percentage
+1	55.556
+2	33.333
+3	33.333
+4	11.111
+5	11.111
+6	22.222
+7	11.111
+8	11.111
+9	11.111
+
