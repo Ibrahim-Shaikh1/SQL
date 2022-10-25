@@ -328,14 +328,174 @@ Output:
 id	first_name	employee_title	salary	manager_id
 11	Richerd	Manager	250000	1
 
+Question 11: Highest Salary In Department
+
+Find the employee with the highest salary per department.
+Output the department name, employee's first name along with the corresponding salary.
+
+Table: employee
+
+Answer: 
+-- employee with the highest salary per department 
+-- output department name, employee first name, corresponding salary 
+
+Select first_name, department, salary 
+from employee 
+where department = 'Sales' and salary = 
+    (Select MAX(salary) as max_salary_s
+    from employee
+    where department = 'Sales')
+    OR 
+    department = 'Management' and salary = 
+    (Select MAX(salary) as max_salary_s
+    from employee
+    where department = 'Management')
+    OR 
+    department = 'Audit' and salary = 
+    (Select MAX(salary) as max_salary_s
+    from employee
+    where department = 'Audit')
+    order by salary desc
+
+Output:
+first_name	department	salary
+Richerd	Management	250000
+Mick	Sales	2200
+Shandler	Audit	1100
+
+Question 12: Highest Target Under Manager
+Find the highest target achieved by the employee or employees who works under the manager id 13. Output the first name of the employee and target achieved. The solution should show the highest target achieved under manager_id=13 and which employee(s) achieved it.
+
+Table: salesforce_employees
+
+Answer: 
+-- highest target achieved by the employee or employees who works under the manager id 13
+-- output first name of employee and target acheived 
+-- solution should show highest target achieved under 13 and which employee activated it
+
+select first_name, max(target) as highest_target 
+from salesforce_employees 
+where manager_id = '13' and target = (select max(target) from salesforce_employees where manager_id = '13')
+group by first_name
+
+Output: 
+first_name	highest_target
+David	400
+Steve	400
+Nicky	400
+
+Question 13: Highest Cost Orders
+
+Find the customer with the highest daily total order cost between 2019-02-01 to 2019-05-01. If customer had more than one order on a certain day, sum the order costs on daily basis. Output customer's first name, total cost of their items, and the date.
 
 
+For simplicity, you can assume that every first name in the dataset is unique.
+
+Tables: customers, orders
+
+Answer: 
+--find customer with highest daily total order cost between 2019-02-01 to 2019-05-01
+--if someone had more than one order on a given day, sum costs by day 
+-- output first name, total cost, and date 
+-- join based on cust id to id 
+--group by function based on first name/ date and sum function on cost 
+select c.first_name, sum(o.total_order_cost) as total_cost, o.order_date
+from customers as c 
+join orders as o 
+on c.id= o.cust_id 
+group by c.first_name, o.order_date 
+having o.order_date between '2019-02-01' and '2019-05-01'
+order by sum(o.total_order_cost) desc 
+limit 1
+
+Output:
+first_name	total_cost	order_date
+Jill	275	2019-04-19
+
+Question 14: Reviews of Categories
+
+Find the top business categories based on the total number of reviews. Output the category along with the total number of reviews. Order by total reviews in descending order.
+
+Table: yelp_business
+
+Output: 
+--find top business categories with total number of reviews 
+--output category and total number of reviews 
+--order by total reviews in desc order 
+
+Select unnest(string_to_array(categories, ';')) AS category, Sum(review_count) as total_reviews
+from yelp_business 
+group by unnest(string_to_array(categories, ';'))
+order by sum(review_count) desc
+
+Output: Only included a portion of output 
+category	total_reviews
+Restaurants	1703
+Food	508
+Pizza	456
+Chinese	417
+Japanese	350
+Gluten-Free	344
+Sushi Bars	331
+American (New)	242
+Italian	222
+Bars	212
+Nightlife	212
+Modern European	197
+Sandwiches	181
+Greek	176
+Shopping	174
+Event Planning & Services	162
+Sports Bars	151
+Health & Medical	134
+Wine & Spirits	120
+American (Traditional)	120
+Vegan	120
+Beer	120
+Canadian (New)	120
+Beauty & Spas	114
 
 
+Question 15: Highest Energy Consumption
+
+Find the date with the highest total energy consumption from the Meta/Facebook data centers. Output the date along with the total energy consumption across all data centers.
+
+Tables: fb_eu_energy, fb_asia_energy, fb_na_energy
+
+Answer: 
+--date with highest total energy consumption from data centers 
+-- output this date with total energy consumption across all data centers 
+
+With total_energy as 
+(
+Select * 
+From fb_eu_energy as eu 
+Union all 
+Select * 
+from fb_asia_energy as asia 
+Union all 
+select * 
+from fb_na_energy as na 
+),
+energy_by_date AS (
+Select date, sum(consumption) as total_energy
+From total_energy 
+group by date 
+order by date asc),
+max_energy as 
+(Select max(total_energy) as max_energy
+from energy_by_date )
+select 
+ebd.date,
+ebd.total_energy
+from energy_by_date ebd 
+join max_energy me 
+on ebd.total_energy = me.max_energy 
+
+Output: 
+date	total_energy
+2020-01-06	1250
+2020-01-07	1250
 
 
-
-
-
-
-
+IIf you wish to see more questions, please visit my StrataScratch account listed at the top of this page
